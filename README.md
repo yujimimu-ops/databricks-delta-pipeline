@@ -1,63 +1,75 @@
-# databricks-delta-pipeline
-Databricks × Delta Lake ETL sample project
-Databricks Delta Lake ETL Pipeline Sample
-Databricks Delta Lake ETL Pipeline Sample
-概要
-このリポジトリは Azure Databricks と Delta Lake を用いた ETL パイプラインの基本構成を再現したサンプルです。
-実務で得たクラウド移行やデータパイプライン運用の知見を、再現可能な形でまとめています。
-処理フロー:
-生データ → 前処理 → 集約 → Delta テーブル公開
-を Notebook 形式で整理しています。
+# PySpark + Delta Lake ETL サンプル
 
-目的
+このリポジトリは、PySpark と Delta Lake を用いた ETL パイプラインの最小サンプルです。  
+実務の Databricks × ETL 構成（ETL クラス化 / Notebook 実行 / Delta 書き込み）に近い形で作成しています。
 
-Databricks を用いたデータ処理の理解を深める
-Delta Lake の ACID トランザクション / MERGE を使った更新処理の実例を提示
-実務レベルの ETL 設計を再現
-技術理解を外部から確認可能な形で共有（技術選考用）
+---
 
+##  プロジェクト構成
+
+your-repo/
+├── notebooks/
+│ └── etl_delta_demo.py # Notebook デモ（ETL の実行）
+├── src/
+│ └── etl.py # ETL ロジック（Load / Transform / Write）
+├── data/
+│ ├── sample_sales.csv # デモ用CSV（任意）
+│ └── delta/ # Delta書き込み先
+└── README.md
+
+yaml
+コードをコピーする
+
+---
+
+## 実行方法（PySpark / Databricks 共通）
+
+1. SparkSession を生成  
+2. CSV を読み込み  
+3. 変換処理を実行  
+4. Delta テーブルとして書き込み  
+
+Notebook では以下のコードで ETL を実行しています：
+
+```python
+from pyspark.sql import SparkSession
+from src.etl import DeltaETL
+
+spark = SparkSession.builder.appName("demo-etl").getOrCreate()
+
+etl = DeltaETL(spark)
+
+df = etl.load_csv("./data/sample_sales.csv")
+df_transformed = etl.transform_sales(df)
+etl.write_delta(df_transformed, "./data/delta/sales")
+
+spark.stop()
+ ETL クラスの設計方針（src/etl.py）
+Load / Transform / Write を明確に分離
+
+Notebook にロジックを書かず、クラスに集約
+
+Delta Lake を利用し、ACID 特性を保持
+
+データ品質（NULL除去 / 型変換）を最低限実装
+
+実務の Databricks プロジェクトで使われる構成に寄せている
 
 使用技術
-
-Azure Databricks
-PySpark
-Delta Lake
-Databricks Workflow（想定）
 Python 3.x
 
+PySpark
 
-ディレクトリ構成
-/notebooks
-   ├── 01_load_raw_data.py
-   ├── 02_cleaning_processing.py
-   ├── 03_aggregate.py
-   └── 04_publish_delta_tables.py
-
-/data_sample
-   └── sample_data.csv
-
-README.md
+Delta Lake
 
 
-実行方法
+ 補足
+このリポジトリは小規模でも
 
-Databricks Workspace に notebooks ディレクトリをインポート
-サンプルデータを DBFS にアップロード
-Notebook を上から順に実行
-Delta テーブルが作成され、MERGE による更新が可能になります
+クラスタ構成
 
+ETL パターン
 
-工夫したポイント
+Delta 書き込み
 
-Delta Lake による SCD Type2 風の MERGE 処理を実装
-運用で想定される「部分差分更新」を再現
-実運用で行っていた ログ出力やデータ品質チェックを簡易的に導入
-Notebook の章構成を、実務パイプライン構成と一致させて設計
-
-
-今後の改善
-
-ジョブ化（Databricks Workflow）のサンプル追加
-エラーハンドリングの強化
-pytest による ETL 単体テストの追加
-Lakehouse 全体アーキテクチャ図の追加
+などを理解していることを示す目的で作成しています。
